@@ -44,10 +44,12 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @EnableConfigurationProperties
 @ConditionalOnClass(EurekaClientConfig.class)
+// 项目中引入了EurekaClient的相关jar，但是不想成为客户端，那么可以配置eureka.client.enabled=false
 @ConditionalOnProperty(value = "eureka.client.enabled", matchIfMissing = true)
 @ConditionalOnDiscoveryEnabled
 public class EurekaDiscoveryClientConfiguration {
 
+	// 自动装配过程中，其实eureka会自动帮我们先注册一个market，所以不加@EnableEurekaClient也是可以的
 	@Bean
 	public Marker eurekaDiscoverClientMarker() {
 		return new Marker();

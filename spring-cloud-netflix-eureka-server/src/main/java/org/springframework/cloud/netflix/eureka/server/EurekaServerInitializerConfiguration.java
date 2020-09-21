@@ -35,6 +35,10 @@ import org.springframework.web.context.ServletContextAware;
 /**
  * @author Dave Syer
  */
+
+/**
+ * 实现SmartLifecycle接口，可以在Spring容器的bean创建完成之后做一些事情(start方法)
+ */
 @Configuration
 public class EurekaServerInitializerConfiguration
 		implements ServletContextAware, SmartLifecycle, Ordered {
@@ -67,12 +71,16 @@ public class EurekaServerInitializerConfiguration
 		new Thread(() -> {
 			try {
 				// TODO: is this class even needed now?
+				// 重点关注下初始化EurekaServerContext的细节
 				eurekaServerBootstrap.contextInitialized(
 						EurekaServerInitializerConfiguration.this.servletContext);
 				log.info("Started Eureka Server");
 
+				// 发布事件
 				publish(new EurekaRegistryAvailableEvent(getEurekaServerConfig()));
+				// 状态属性设置
 				EurekaServerInitializerConfiguration.this.running = true;
+				// 发布事件
 				publish(new EurekaServerStartedEvent(getEurekaServerConfig()));
 			}
 			catch (Exception ex) {

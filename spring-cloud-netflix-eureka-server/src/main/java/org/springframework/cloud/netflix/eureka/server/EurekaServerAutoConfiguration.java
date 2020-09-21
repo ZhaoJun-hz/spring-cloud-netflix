@@ -75,11 +75,22 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
  * @author Fahim Farook
  */
 @Configuration
+/**
+ * 导入了EurekaServerInitializerConfiguration类
+ */
 @Import(EurekaServerInitializerConfiguration.class)
+/**
+ * 装配EurekaServerAutoConfiguration前提是有EurekaServerMarkerConfiguration.Marker这个类，
+ * 这个类由EnableEurekaServer注解引入的EurekaServerMarkerConfiguration
+ */
 @ConditionalOnBean(EurekaServerMarkerConfiguration.Marker.class)
+
 @EnableConfigurationProperties({ EurekaDashboardProperties.class,
 		InstanceRegistryProperties.class })
 @PropertySource("classpath:/eureka/server.properties")
+/**
+ * EurekaServerAutoConfiguration，Eureka Server自动装配入口类
+ */
 public class EurekaServerAutoConfiguration extends WebMvcConfigurerAdapter {
 
 	/**
@@ -114,6 +125,12 @@ public class EurekaServerAutoConfiguration extends WebMvcConfigurerAdapter {
 				EurekaServerAutoConfiguration.class);
 	}
 
+	/**
+	 * 和Eureka管理界面有关系
+	 * 注入一个对外的接口(仪表盘  ---   后台界面)
+	 * 可以配置eureka.dashboard.enabled=false关闭
+	 * @return
+	 */
 	@Bean
 	@ConditionalOnProperty(prefix = "eureka.dashboard", name = "enabled", matchIfMissing = true)
 	public EurekaController eurekaController() {
@@ -147,6 +164,12 @@ public class EurekaServerAutoConfiguration extends WebMvcConfigurerAdapter {
 		return new ReplicationClientAdditionalFilters(Collections.emptySet());
 	}
 
+	/**
+	 * 对等节点感知实例注册器(集群模式下注册服务使用到的注册器)
+	 * EurekaServer集群中各个节点是对等的，没有主从之分
+	 * @param serverCodecs
+	 * @return
+	 */
 	@Bean
 	public PeerAwareInstanceRegistry peerAwareInstanceRegistry(
 			ServerCodecs serverCodecs) {
@@ -157,6 +180,14 @@ public class EurekaServerAutoConfiguration extends WebMvcConfigurerAdapter {
 				this.instanceRegistryProperties.getDefaultOpenForTrafficCount());
 	}
 
+	/**
+	 * PeerEurekaNodes，辅助封装对等接点相关的信息和操作，比如更新集群当中的对等节点
+	 *
+	 * @param registry
+	 * @param serverCodecs
+	 * @param replicationClientAdditionalFilters
+	 * @return
+	 */
 	@Bean
 	@ConditionalOnMissingBean
 	public PeerEurekaNodes peerEurekaNodes(PeerAwareInstanceRegistry registry,
@@ -167,6 +198,14 @@ public class EurekaServerAutoConfiguration extends WebMvcConfigurerAdapter {
 				replicationClientAdditionalFilters);
 	}
 
+	/**
+	 * 注入EurekaServerContext 上下文对象，默认DefaultEurekaServerContext
+	 * DefaultEurekaServerContext，有一个@PostConstruct注解标注的initialize()方法，会在构造方法执行结束后执行，调用PeerEurekaNodes.start()方法
+	 * @param serverCodecs
+	 * @param registry
+	 * @param peerEurekaNodes
+	 * @return
+	 */
 	@Bean
 	public EurekaServerContext eurekaServerContext(ServerCodecs serverCodecs,
 			PeerAwareInstanceRegistry registry, PeerEurekaNodes peerEurekaNodes) {
@@ -174,6 +213,12 @@ public class EurekaServerAutoConfiguration extends WebMvcConfigurerAdapter {
 				registry, peerEurekaNodes, this.applicationInfoManager);
 	}
 
+	/**
+	 * 注入了EurekaServerBootstrap类， EurekaServer启动引导类，后续启动会用到该类
+	 * @param registry
+	 * @param serverContext
+	 * @return
+	 */
 	@Bean
 	public EurekaServerBootstrap eurekaServerBootstrap(PeerAwareInstanceRegistry registry,
 			EurekaServerContext serverContext) {
@@ -186,6 +231,13 @@ public class EurekaServerAutoConfiguration extends WebMvcConfigurerAdapter {
 	 * Register the Jersey filter.
 	 * @param eurekaJerseyApp an {@link Application} for the filter to be registered
 	 * @return a jersey {@link FilterRegistrationBean}
+	 */
+	/**
+	 * Jersey，框架，类似SpringMVC，对外提供Restful服务接口
+	 * 添加Jersey 过滤器
+	 *
+	 * @param eurekaJerseyApp
+	 * @return
 	 */
 	@Bean
 	public FilterRegistrationBean jerseyFilterRegistration(
@@ -206,6 +258,12 @@ public class EurekaServerAutoConfiguration extends WebMvcConfigurerAdapter {
 	 * @param resourceLoader a {@link ResourceLoader} instance to get classloader from
 	 * @return created {@link Application} object
 	 */
+	/**
+	 * Jersey细节配置
+	 * @param environment
+	 * @param resourceLoader
+	 * @return
+	 */
 	@Bean
 	public javax.ws.rs.core.Application jerseyApplication(Environment environment,
 			ResourceLoader resourceLoader) {
@@ -214,13 +272,18 @@ public class EurekaServerAutoConfiguration extends WebMvcConfigurerAdapter {
 				false, environment);
 
 		// Filter to include only classes that have a particular annotation.
-		//
+		// 配置Jersey注解
+		// Path注解，类似于SpringMVC RequestMapping
 		provider.addIncludeFilter(new AnnotationTypeFilter(Path.class));
 		provider.addIncludeFilter(new AnnotationTypeFilter(Provider.class));
 
 		// Find classes in Eureka packages (or subpackages)
 		//
 		Set<Class<?>> classes = new HashSet<>();
+		// 指定要扫描的包
+		// 包名 "com.netflix.discovery", "com.netflix.eureka"
+		// 在SpringMVC中叫Controller，在Jersey中对外提供接口的类叫资源
+		// 如ApplicationResource
 		for (String basePackage : EUREKA_PACKAGES) {
 			Set<BeanDefinition> beans = provider.findCandidateComponents(basePackage);
 			for (BeanDefinition bd : beans) {

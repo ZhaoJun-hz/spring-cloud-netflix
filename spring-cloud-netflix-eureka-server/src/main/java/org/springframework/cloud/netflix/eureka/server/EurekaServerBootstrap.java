@@ -80,7 +80,9 @@ public class EurekaServerBootstrap {
 
 	public void contextInitialized(ServletContext context) {
 		try {
+			// 初始化环境信息
 			initEurekaEnvironment();
+			// 初始化context细节
 			initEurekaServerContext();
 
 			context.setAttribute(EurekaServerContext.class.getName(), this.serverContext);
@@ -137,6 +139,7 @@ public class EurekaServerBootstrap {
 
 	protected void initEurekaServerContext() throws Exception {
 		// For backward compatibility
+		// 注册两个转换器
 		JsonXStream.getInstance().registerConverter(new V1AwareInstanceInfoConverter(),
 				XStream.PRIORITY_VERY_HIGH);
 		XmlXStream.getInstance().registerConverter(new V1AwareInstanceInfoConverter(),
@@ -148,15 +151,20 @@ public class EurekaServerBootstrap {
 			this.awsBinder.start();
 		}
 
+		// 为非IOC容器提供获取EurekaServerContext对象的接口
 		EurekaServerContextHolder.initialize(this.serverContext);
 
 		log.info("Initialized server context");
 
 		// Copy registry from neighboring eureka node
+		// server实例启动的时候，从集群中其他的server拷贝注册信息过来(同步)，每一个server对于其他server来说也是客户端
+		// 集群模式下this.registry为PeerAwareInstanceRegistry
 		int registryCount = this.registry.syncUp();
+		// 更改实例状态为UP，对外提供服务
 		this.registry.openForTraffic(this.applicationInfoManager, registryCount);
 
 		// Register all monitoring statistics.
+		// 注册统计数据
 		EurekaMonitors.registerAllStats();
 	}
 

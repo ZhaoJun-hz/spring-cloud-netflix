@@ -34,6 +34,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class HystrixCircuitBreakerConfiguration {
 
+	// 注入了HystrixCommandAspect切面，Hystrix就是靠切面机制干活的
 	@Bean
 	public HystrixCommandAspect hystrixCommandAspect() {
 		return new HystrixCommandAspect();

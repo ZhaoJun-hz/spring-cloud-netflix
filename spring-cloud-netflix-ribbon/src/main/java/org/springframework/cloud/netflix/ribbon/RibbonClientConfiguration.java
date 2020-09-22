@@ -109,9 +109,11 @@ public class RibbonClientConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public IRule ribbonRule(IClientConfig config) {
+		// 如果配置文件配置了负载均衡策略，以配置文件为准
 		if (this.propertiesFactory.isSet(IRule.class, name)) {
 			return this.propertiesFactory.get(IRule.class, config, name);
 		}
+		// 默认返回 ZoneAvoidanceRule
 		ZoneAvoidanceRule rule = new ZoneAvoidanceRule();
 		rule.initWithNiwsConfig(config);
 		return rule;
@@ -129,6 +131,8 @@ public class RibbonClientConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@SuppressWarnings("unchecked")
+	// 向容器中注入ServerList Bean对象，该对象并没有实际做什么
+	// 猜测，注入了一个空对象，对象中的数据应该在后续操作中获得
 	public ServerList<Server> ribbonServerList(IClientConfig config) {
 		if (this.propertiesFactory.isSet(ServerList.class, name)) {
 			return this.propertiesFactory.get(ServerList.class, config, name);
@@ -152,6 +156,8 @@ public class RibbonClientConfiguration {
 		if (this.propertiesFactory.isSet(ILoadBalancer.class, name)) {
 			return this.propertiesFactory.get(ILoadBalancer.class, config, name);
 		}
+		// 默认注入的负载均衡器实现为ZoneAwareLoadBalancer
+		// 容器中的ServerList Bean对象被注入到负载均衡器中
 		return new ZoneAwareLoadBalancer<>(config, rule, ping, serverList,
 				serverListFilter, serverListUpdater);
 	}

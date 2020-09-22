@@ -113,15 +113,19 @@ public class RibbonLoadBalancerClient implements LoadBalancerClient {
 	 */
 	public <T> T execute(String serviceId, LoadBalancerRequest<T> request, Object hint)
 			throws IOException {
+		// 获取一个负载均衡器对象，大脑
 		ILoadBalancer loadBalancer = getLoadBalancer(serviceId);
+		// 通过负载均衡器选择一个最终要使用的server实例对象
 		Server server = getServer(loadBalancer, hint);
 		if (server == null) {
 			throw new IllegalStateException("No instances available for " + serviceId);
 		}
+		// 把server 封装成 RibbonServer
 		RibbonServer ribbonServer = new RibbonServer(serviceId, server,
 				isSecure(server, serviceId),
 				serverIntrospector(serviceId).getMetadata(server));
 
+		// 继续执行
 		return execute(serviceId, ribbonServer, request);
 	}
 
@@ -141,6 +145,7 @@ public class RibbonLoadBalancerClient implements LoadBalancerClient {
 		RibbonStatsRecorder statsRecorder = new RibbonStatsRecorder(context, server);
 
 		try {
+			// 向server实例发起请求的关键步骤
 			T returnVal = request.apply(serviceInstance);
 			statsRecorder.recordStats(returnVal);
 			return returnVal;
@@ -186,6 +191,7 @@ public class RibbonLoadBalancerClient implements LoadBalancerClient {
 			return null;
 		}
 		// Use 'default' on a null hint, or just pass it on?
+		// 默认是ZoneAwareLoadBalancer
 		return loadBalancer.chooseServer(hint != null ? hint : "default");
 	}
 

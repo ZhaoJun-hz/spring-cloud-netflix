@@ -62,6 +62,9 @@ public class SpringClientFactory extends NamedContextFactory<RibbonClientSpecifi
 	 * @throws RuntimeException if any error occurs
 	 */
 	public ILoadBalancer getLoadBalancer(String name) {
+		// 从容器中获取ILoadBalancer实例
+		// 该实例是，RibbonAutoConfiguration注入SpringClientFactory，SpringClientFactory的构造器中，
+		// 又涉及到RibbonClientConfiguration，这里面装配了ILoadBalancer，IRule，IPing
 		return getInstance(name, ILoadBalancer.class);
 	}
 

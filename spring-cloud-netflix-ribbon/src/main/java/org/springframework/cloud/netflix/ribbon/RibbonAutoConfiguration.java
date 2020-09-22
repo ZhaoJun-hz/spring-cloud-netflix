@@ -56,10 +56,15 @@ import org.springframework.web.client.RestTemplate;
  * @author Dave Syer
  * @author Biju Kunjummen
  */
+
+/**
+ * 借助于SpringBoot的自动装配完成Ribbon的一些事情
+ */
 @Configuration
 @Conditional(RibbonAutoConfiguration.RibbonClassesConditions.class)
 @RibbonClients
 @AutoConfigureAfter(name = "org.springframework.cloud.netflix.eureka.EurekaClientAutoConfiguration")
+// LoadBalancerAutoConfiguration这个类需要看
 @AutoConfigureBefore({ LoadBalancerAutoConfiguration.class,
 		AsyncLoadBalancerAutoConfiguration.class })
 @EnableConfigurationProperties({ RibbonEagerLoadProperties.class,
@@ -84,6 +89,8 @@ public class RibbonAutoConfiguration {
 		return factory;
 	}
 
+
+	// 注入LoadBalancerClient，实现是RibbonLoadBalancerClient
 	@Bean
 	@ConditionalOnMissingBean(LoadBalancerClient.class)
 	public LoadBalancerClient loadBalancerClient() {
